@@ -1,0 +1,590 @@
+Ext.define('MBilling.view.main.MainController', {
+    extend: 'Ext.app.ViewController',
+    alias: 'controller.main',
+    requires: ['Ext.Img',
+        // this is the classic MAINcontroller 
+        'Ext.layout.container.Accordion', 'Ext.tab.Panel', 'Ext.dashboard.Dashboard', 'MBilling.view.main.LoginController', 'MBilling.view.main.ImportWallpaper'
+    ],
+    msgLogout: t('Do you really want to leave the system?'),
+    textLogout: t('Exit'),
+    titleWarning: t('Warning'),
+    msgFieldsRequired: t('Fill in the fields correctly.'),
+    routes: {
+        ':node': 'onRouteChange'
+    },
+    onRouteChange: function(id) {
+        id = (id || '').toLowerCase();
+        window.hashTag = id;
+    },
+    init: function() {
+        var me = this;
+        me.runnerInfoSystem = Ext.create('Ext.util.TaskRunner');
+        me.callParent(arguments);
+        App.callLogout = me.callLogout;
+    },
+    loadMenuStandard: function(menu) {
+        var me = this,
+            modules = [],
+            menuText,
+            text,
+            isMobileMenu = window.isMobileLayout || window.isTablet || window.isTablets,
+            getMenuTreeConfig = function(config) {
+                return Ext.apply({
+                    cls: isMobileMenu ? 'mb-mobile-main-menu-item' : '',
+                    bodyCls: isMobileMenu ? 'mb-mobile-main-menu-item-body' : '',
+                    autoScroll: true,
+                    scrollable: true,
+                    viewConfig: {
+                        cls: isMobileMenu ? 'mb-mobile-main-menu-view' : ''
+                    },
+                    listeners: {
+                        itemclick: 'createTabStandard',
+                        afterrender: 'enableMobileMenuTouchScroll',
+                        expand: 'enableMobileMenuTouchScroll'
+                    }
+                }, config);
+            };
+        menu.setLoading();
+        Ext.each(App.user.menu, function(menuItem) {
+            if (!Ext.isEmpty(menuItem.rows)) {
+                Ext.each(menuItem.rows, function(item) {
+                    text = (item.text.indexOf('t(') !== -1) ? eval(item.text) : item.text;
+                    modules.push({
+                        text: text,
+                        iconCls: isMobileMenu ? '' : item.iconCls,
+                        module: item.module,
+                        leaf: item.leaf,
+                        id: 'children-' + item.module,
+                        children: me.formatSubModuleStandard(item.rows, isMobileMenu),
+                        action: item.action
+                    });
+                }, me);
+            }
+            menuText = (menuItem.text.indexOf('t(') !== -1) ? eval(menuItem.text) : menuItem.text;
+            if (window.isTablets) {
+                menu.add(getMenuTreeConfig({
+                    rootVisible: true,
+                    root: {
+                        text: menuText,
+                        children: modules
+                    }
+                }));
+            } else {
+                var menuConfig = getMenuTreeConfig({
+                    title: menuText,
+                    root: {
+                        children: modules
+                    }
+                });
+                if (!isMobileMenu) {
+                    menuConfig.iconCls = menuItem.iconCls;
+                }
+                menu.add(menuConfig);
+            }
+            modules = [];
+        }, me);
+        menu.setLoading(false);
+    },
+    enableMobileMenuTouchScroll: function(menu) {
+        var me = this,
+            el,
+            startY = 0,
+            startScrollTop = 0,
+            activeScrollEl = null,
+            pushCandidate = function(candidates, node) {
+                if (node && candidates.indexOf(node) === -1) {
+                    candidates.push(node);
+                }
+            },
+            getCandidates = function(target) {
+                var candidates = [],
+                    node = target,
+                    view = menu && menu.getView && menu.getView(),
+                    nodes,
+                    i;
+                while (node && node !== document) {
+                    pushCandidate(candidates, node);
+                    if (node === el) {
+                        break;
+                    }
+                    node = node.parentNode;
+                }
+                pushCandidate(candidates, view && view.el && view.el.dom);
+                pushCandidate(candidates, menu && menu.body && menu.body.dom);
+                pushCandidate(candidates, el);
+                if (el && el.querySelectorAll) {
+                    nodes = el.querySelectorAll('.mb-mobile-main-menu-view, .x-tree-view, .x-grid-view, .x-grid-body, .x-panel-body');
+                    for (i = 0; i < nodes.length; i++) {
+                        pushCandidate(candidates, nodes[i]);
+                    }
+                }
+                return candidates;
+            },
+            getScrollEl = function(target) {
+                var candidates = getCandidates(target),
+                    i,
+                    candidate;
+                for (i = 0; i < candidates.length; i++) {
+                    candidate = candidates[i];
+                    if (candidate && candidate.scrollHeight > candidate.clientHeight) {
+                        return candidate;
+                    }
+                }
+                return candidates[0];
+            };
+        if (!menu) {
+            return;
+        }
+        if (menu.items && menu.items.each) {
+            menu.items.each(function(item) {
+                me.enableMobileMenuTouchScroll(item);
+            });
+        }
+        el = menu.el && menu.el.dom;
+        if (!el || menu.mbTouchScrollBound) {
+            return;
+        }
+        menu.mbTouchScrollBound = true;
+        el.addEventListener('touchstart', function(event) {
+            var touch = event.touches && event.touches[0],
+                scrollEl = getScrollEl(event.target);
+            if (!touch || !scrollEl) {
+                return;
+            }
+            activeScrollEl = scrollEl;
+            startY = touch.clientY;
+            startScrollTop = scrollEl.scrollTop;
+        }, {
+            capture: true,
+            passive: true
+        });
+        el.addEventListener('touchmove', function(event) {
+            var touch = event.touches && event.touches[0],
+                scrollEl = activeScrollEl || getScrollEl(event.target),
+                deltaY,
+                maxScrollTop,
+                nextScrollTop;
+            if (!touch || !scrollEl || scrollEl.scrollHeight <= scrollEl.clientHeight) {
+                return;
+            }
+            deltaY = startY - touch.clientY;
+            if (Math.abs(deltaY) < 3) {
+                return;
+            }
+            maxScrollTop = scrollEl.scrollHeight - scrollEl.clientHeight;
+            nextScrollTop = Math.max(0, Math.min(maxScrollTop, startScrollTop + deltaY));
+            scrollEl.scrollTop = nextScrollTop;
+            event.preventDefault();
+        }, {
+            capture: true,
+            passive: false
+        });
+    },
+    formatSubModuleStandard: function(menu, isMobileMenu) {
+        var me = this,
+            text;
+        menu = menu || [];
+        Ext.each(menu, function(item) {
+            text = (item.text.indexOf('t(') !== -1) ? eval(item.text) : item.text;
+            item.text = text;
+            item.iconCls = isMobileMenu ? '' : item.iconCls;
+            item.children = me.formatSubModuleStandard(item.rows, isMobileMenu);
+        }, me);
+        return menu;
+    },
+    createTabStandard: function(view, record) {
+        var me = this,
+            tabOpen,
+            module,
+            action,
+            hasAction,
+            txt = record.get('text'),
+            iconCls = window.isMobileLayout || window.isTablet || window.isTablets ? '' : record.get('iconCls') || 'file3',
+            tabPanelCenter = me.lookupReference('tabPanelCenter');
+        if (record.get('leaf')) {
+            tabOpen = tabPanelCenter.items.findBy(function(tab) {
+                return tab.title === txt;
+            });
+            if (!tabOpen) {
+                module = record.get('module');
+                action = record.get('action');
+                hasAction = Ext.isDefined(action);
+                tabPanelCenter.add({
+                    xtype: module + 'module',
+                    title: txt,
+                    autoDestroy: true,
+                    closable: true,
+                    iconCls: iconCls,
+                    module: module,
+                    allowCreate: hasAction ? action.search('c') !== -1 : false,
+                    allowUpdate: hasAction ? action.search('u') !== -1 : false,
+                    allowDelete: hasAction ? action.search('d') !== -1 : false
+                }).show();
+            } else {
+                tabPanelCenter.setActiveTab(tabOpen);
+            }
+        }
+        if (window.isTablet) {
+            tabPanelCenter.getTabBar().setVisible(false);
+            me.hideMobileMenu();
+        }
+    },
+    hideMobileMenu: function() {
+        var me = this,
+            menu = me.lookupReference('tabPanelMenu');
+        if (!window.isMobileLayout && !window.isTablet && !window.isTablets) {
+            return;
+        }
+        menu && menu.hide();
+        me.getView().updateLayout();
+    },
+    showMobileMenu: function() {
+        var me = this,
+            menu = me.lookupReference('tabPanelMenu');
+        if (!window.isMobileLayout && !window.isTablet && !window.isTablets) {
+            return;
+        }
+        if (menu) {
+            menu.show();
+            menu.expand && menu.expand(false);
+        }
+        me.getView().updateLayout();
+    },
+    importLogo: function(menuItem) {
+        var me = this;
+        if (me.winLogo && me.winLogo.isVisible()) {
+            return;
+        }
+        me.winLogo = Ext.widget('importlogo', {
+            title: menuItem.text,
+            glyph: menuItem.glyph
+        });
+    },
+    saveLogo: function() {
+        var me = this,
+            view = me.getView(),
+            btnSave = me.lookupReference('saveImportLogo'),
+            formPanel = me.lookupReference('formImportLogo'),
+            fieldImportLogo = formPanel.getForm().findField('logo'),
+            values = Ext.apply(formPanel.getValues(), {
+                formImportLogo: fieldImportLogo.getValue()
+            });
+        if (!formPanel.isValid()) {
+            Ext.ux.Alert.alert(view.titleWarning, view.msgFormInvalid, 'warning');
+            return;
+        }
+        btnSave.disable();
+        formPanel.setLoading();
+        formPanel.getForm().submit({
+            url: 'index.php/authentication/importLogo',
+            params: values,
+            success: function(form, action) {
+                var obj = Ext.decode(action.response.responseText);
+                if (obj.success) {
+                    Ext.ux.Alert.alert(me.titleSuccess, t(obj.msg), 'success');
+                } else {
+                    errors = Helper.Util.convertErrorsJsonToString(obj.msg);
+                    if (!Ext.isObject(obj.errors)) {
+                        Ext.ux.Alert.alert(me.titleError, errors, 'error');
+                    } else {
+                        Ext.ux.Alert.alert(me.titleWarning, me.msgFormInvalid, 'warning');
+                    }
+                }
+                formPanel.setLoading(false);
+                btnSave.enable();
+            }
+        });
+    },
+    importWallpaper: function(menuItem) {
+        var me = this;
+        if (me.winImportwallpaper && me.winImportwallpaper.isVisible()) {
+            return;
+        }
+        me.winImportwallpaper = Ext.widget('importwallpaper', {
+            title: menuItem.text,
+            glyph: menuItem.glyph
+        });
+    },
+    importLoginBackground: function(menuItem) {
+        var me = this;
+        if (me.winLoginBackground && me.winLoginBackground.isVisible()) {
+            return;
+        }
+        me.winLoginBackground = Ext.widget('importloginbackground', {
+            title: menuItem.text,
+            glyph: menuItem.glyph
+        });
+    },
+    saveImportLoginBackground: function() {
+        var me = this,
+            view = me.getView(),
+            btnSave = me.lookupReference('saveImportLoginBackground'),
+            formPanel = me.lookupReference('formImportLoginBackground');
+        fieldImportLoginBackground = formPanel.getForm().findField('loginbackground');
+        values = Ext.apply(formPanel.getValues(), {
+            formImportLogo: fieldImportLoginBackground.getValue()
+        });
+        if (!formPanel.isValid()) {
+            Ext.ux.Alert.alert(view.titleWarning, view.msgFormInvalid, 'warning');
+            return;
+        }
+        if (fieldImportLoginBackground.getValue().toUpperCase().indexOf('JPG') == -1) {
+            Ext.ux.Alert.alert(view.titleWarning, view.msgFormInvalid + "<br>" + t('Invalid format'), 'warning');
+            return;
+        } else {
+            btnSave.disable();
+            formPanel.setLoading();
+            formPanel.getForm().submit({
+                url: 'index.php/authentication/importLoginBackground',
+                params: values,
+                success: function(form, action) {
+                    var obj = Ext.decode(action.response.responseText);
+                    if (obj.success) {
+                        Ext.ux.Alert.alert(me.titleSuccess, t(obj.msg), 'success');
+                    } else {
+                        errors = Helper.Util.convertErrorsJsonToString(obj.msg);
+                        if (!Ext.isObject(obj.errors)) {
+                            Ext.ux.Alert.alert(me.titleError, t(errors), 'error');
+                        } else {
+                            Ext.ux.Alert.alert(me.titleWarning, me.msgFormInvalid, 'warning');
+                        }
+                    }
+                    formPanel.setLoading(false);
+                    btnSave.enable();
+                }
+            });
+        }
+    },
+    saveWallpaper: function() {
+        var me = this,
+            view = me.getView(),
+            btnSave = me.lookupReference('saveImportWallpaper'),
+            formPanel = me.lookupReference('formImportWallpaper'),
+            fieldImportWallpaper = formPanel.getForm().findField('wallpaper'),
+            values = Ext.apply(formPanel.getValues(), {
+                formImportLogo: fieldImportWallpaper.getValue()
+            });
+        if (!formPanel.isValid()) {
+            Ext.ux.Alert.alert(view.titleWarning, view.msgFormInvalid, 'warning');
+            return;
+        }
+        if (fieldImportWallpaper.getValue().toUpperCase().indexOf('JPG') == -1) {
+            Ext.ux.Alert.alert(view.titleWarning, view.msgFormInvalid + "<br>" + t('Invalid format'), 'warning');
+            return;
+        }
+        btnSave.disable();
+        formPanel.setLoading();
+        formPanel.getForm().submit({
+            url: 'index.php/authentication/importWallpapers',
+            params: values,
+            success: function(form, action) {
+                var obj = Ext.decode(action.response.responseText);
+                if (obj.success) {
+                    Ext.ux.Alert.alert(me.titleSuccess, t(obj.msg), 'success');
+                } else {
+                    errors = Helper.Util.convertErrorsJsonToString(obj.msg);
+                    if (!Ext.isObject(obj.errors)) {
+                        Ext.ux.Alert.alert(me.titleError, t(errors), 'error');
+                    } else {
+                        Ext.ux.Alert.alert(me.titleWarning, me.msgFormInvalid, 'warning');
+                    }
+                }
+                formPanel.setLoading(false);
+                btnSave.enable();
+            }
+        });
+    },
+    onSetData: function(btn) {
+        var me = this,
+            loginWin = me.getView(),
+            fieldEmail = me.lookupReference('email'),
+            fieldCountryiso = me.lookupReference('countryiso'),
+            fieldCurrency = me.lookupReference('currency');
+        if (!fieldEmail.isValid() || !fieldCountryiso.isValid() || !fieldCurrency.isValid()) {
+            Ext.ux.Alert.alert(me.titleWarning, t('Fill in the fields correctly.'), 'warning');
+            return false;
+        }
+        loginWin.setLoading(me.msgAuthenticating);
+        Ext.Ajax.request({
+            url: 'index.php/configuration/setData',
+            params: {
+                email: fieldEmail.getValue(),
+                countryiso: fieldCountryiso.getValue(),
+                currency: fieldCurrency.getValue()
+            },
+            success: function(response) {
+                response = Ext.decode(response.responseText);
+                if (response.success) {
+                    location.reload()
+                } else {
+                    Ext.ux.Alert.alert(me.titleErrorInAuthentication, response.msg, 'error');
+                    fieldUser.focus(true);
+                    loginWin.setLoading(false);
+                }
+            }
+        });
+    },
+    openHelp: function(menuItem) {
+        var me = this;
+        if (me.winHelp && me.winHelp.isVisible()) {
+            return;
+        }
+        me.winHelp = Ext.widget('window', {
+            title: menuItem.text,
+            glyph: menuItem.glyph,
+            autoShow: true,
+            width: 800,
+            height: 450,
+            layout: 'fit',
+            border: false,
+            items: {
+                xtype: 'help'
+            }
+        });
+    },
+    openChangePassword: function(menuItem) {
+        var me = this;
+        if (me.winChangePassword && me.winChangePassword.isVisible()) {
+            return;
+        }
+        me.winChangePassword = Ext.widget('changepassword', {
+            title: menuItem.text,
+            glyph: menuItem.glyph
+        });
+    },
+    openAbout: function(menuItem) {
+        var me = this;
+        if (me.winAbout && me.winAbout.isVisible()) {
+            return;
+        }
+        me.winAbout = Ext.widget('about', {
+            title: menuItem.text,
+            glyph: menuItem.glyph
+        });
+    },
+    openSettings: function(menuItem) {
+        var me = this;
+        if (me.winSettings && me.winSettings.isVisible()) {
+            return;
+        }
+        me.winSettings = Ext.widget('window', {
+            title: menuItem.text,
+            glyph: menuItem.glyph,
+            autoShow: true,
+            width: 900,
+            height: 520,
+            layout: 'fit',
+            border: false,
+            items: {
+                xtype: 'settings'
+            }
+        });
+    },
+    logout: function() {
+        var me = this;
+        Ext.Msg.confirm(me.textLogout, me.msgLogout, function(opt) {
+            if (opt === 'yes') {
+                me.callLogout();
+            }
+        });
+    },
+    callLogout: function() {
+        var me = this;
+        window.isDesktop ? App.desktop.setLoading() : App.mainView.setLoading();
+        Ext.Ajax.request({
+            url: 'index.php/authentication/logoff',
+            success: function() {
+                App.user.logged = false;
+                location.reload();
+            }
+        });
+    },
+    getManual: function(view, record) {
+        if (!record.get('leaf')) {
+            return;
+        }
+        var panelManual = this.lookupReference('manualPanel');
+        panelManual.getLoader().url = record.get('url');
+        panelManual.getLoader().load();
+    },
+    changeActivatedTab: function(tabPanel, newCard) {
+        var me = this;
+        //get the menu tab panel
+        tabPanelMenu = me.lookupReference('tabPanelMenu');
+        //loop per menus
+        for (var i = 0, l = tabPanelMenu.items.items.length; i < l; i++) {
+            //get sub menus
+            submenu = tabPanelMenu.items.items[i].getRootNode();
+            //loop per submenus
+            for (var s = 0, t = submenu.childNodes.length; s < t; s++) {
+                //if sub-menu module name is equal activated tab module name, expand that.
+                if (submenu.childNodes[s].data.module == tabPanel.activeTab.module) {
+                    tabPanelMenu.items.items[i].expand();
+                    submenu.childNodes[s].addCls('x-grid-item-selected-activated');
+                } else {
+                    submenu.childNodes[s].removeCls('x-grid-item-selected-activated');
+                }
+            }
+        }
+    },
+    // active_class: 'active',
+    setRunnerInfoSystem: function() {
+        var me = this;
+        if (!window.isDesktop || !App.user.isAdmin || window.isTablets) {
+            return;
+        }
+        this.lookupReference('statusBar').show();
+        me.runnerInfoSystem.start({
+            run: me.setInfoSystem,
+            interval: 7000,
+            scope: me
+        });
+    },
+    setInfoSystem: function() {
+        var me = this;
+        Ext.Ajax.request({
+            url: 'index.php/statusSystem/statusSystemDesktop',
+            success: function(response) {
+                response = Ext.decode(response.responseText);
+                me.lookupReference('avgCpuCount').setText(response.rows.cpuCount);
+                me.lookupReference('avgCpuModel').setText(response.rows.cpuModel);
+                me.lookupReference('avgCpuMediaUso').setText(response.rows.cpuMediaUso);
+                me.lookupReference('avgCpuPercent').setText(response.rows.cpuPercent);
+                me.lookupReference('avgMemTotal').setText(response.rows.memTotal);
+                me.lookupReference('avgMemUsed').setText(response.rows.memUsed);
+                me.lookupReference('avgNetworkin').setText(response.rows.networkin);
+                me.lookupReference('avgNetworkout').setText(response.rows.networkout);
+                me.lookupReference('avgUptime').setText(response.rows.uptime);
+            }
+        });
+    },
+    saveForgetPass: function(btn) {
+        var me = this,
+            forgetWin = me.getView(),
+            fieldEmail = me.lookupReference('email'),
+            fieldCaptcha = me.lookupReference('captcha'),
+            email = fieldEmail.getValue();
+        if (!fieldEmail.isValid()) {
+            Ext.ux.Alert.alert(me.titleWarning, me.msgFieldsRequired, 'warning');
+            return false;
+        }
+        forgetWin.setLoading(me.msgAuthenticating);
+        Ext.Ajax.request({
+            url: 'index.php/authentication/forgetPassword',
+            params: {
+                email: email
+            },
+            success: function(response) {
+                response = Ext.decode(response.responseText);
+                if (response.success) {
+                    forgetWin.setLoading(false);
+                    forgetWin.close();
+                    Ext.ux.Alert.alert(t('Success'), response.msg, 'information');
+                } else {
+                    Ext.ux.Alert.alert(t('Error'), response.msg, 'error');
+                    forgetWin.setLoading(false);
+                }
+            }
+        });
+    }
+});

@@ -1,0 +1,4 @@
+# Comunic: scripts e codigo do servidor sempre com LF (rodam no Debian)
+*.sh text eol=lf
+comunic/** text eol=lf
+custom/*.js text eol=lf

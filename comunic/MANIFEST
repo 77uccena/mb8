@@ -1,0 +1,16 @@
+# Arquivos do repositorio copiados para /var/www/html/mbilling pelo comunic/aplicar.sh.
+# NENHUM deles existe no pacote oficial do MagnusBilling: a atualizacao oficial nao os
+# sobrescreve. Os arquivos oficiais ficam intactos; as mudancas no cadastro de usuario e
+# nas configuracoes entram pelo mecanismo oficial de overrides (protected/config/overrides.php).
+# As traducoes e o index.html nao sao copiados: o aplicar.sh acrescenta o necessario
+# (e o comunic/vigia.sh refaz isso se uma atualizacao apagar).
+custom/mb8-custom.js
+protected/config/overrides.php
+protected/models/overrides/UserOR.php
+protected/models/overrides/ConfigurationOR.php
+protected/models/PlanConsumption.php
+protected/controllers/PlanConsumptionController.php
+protected/components/FinanceReportMailer.php
+protected/commands/PlanConsumptionSetupCommand.php
+protected/commands/RecurringCreditCommand.php
+protected/commands/ComunicAlertCommand.php
