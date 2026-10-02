@@ -6,6 +6,10 @@ migration instructions remain authoritative for deployment.
 
 ## Comunic 1.2 (2026-10-02)
 
+- Regras do 55 no dialplan (`_ZZXXXXXXXX` e `_0ZZXXXXXXXX` no `[billing]` do `extensions_magnus.conf`): o `saude.sh`
+  confere se estao no arquivo e carregadas no Asterisk; o `aplicar.sh` (e o vigia, a cada 5 min) recoloca se uma
+  atualizacao do MagnusBilling apagar, faz `dialplan reload` e manda alerta.
+
 - `gerar-pjsip.sh` / `importar-banco.sh`: os arquivos `pjsip_magnus*.conf` ficam com o usuario do Apache como dono
   (antes ficavam root:asterisk 0640 e o painel dava "Nao foi possivel gravar o arquivo de configuracao do Asterisk").
 

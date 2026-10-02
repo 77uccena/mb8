@@ -106,7 +106,7 @@ done
 chmod 755 "$MB/custom" "$MB/protected/models/overrides"
 mkdir -p "$MB/protected/runtime/recurring_credit"
 
-diga "== 5/7 Traducoes e index.html"
+diga "== 5/7 Traducoes, index.html e dialplan"
 if [ $SILENCIOSO -eq 1 ]; then
     php "$COM/traducoes/mesclar.php" "$MB/resources/locale/pt_BR.js" "$COM/traducoes/pt_BR.js.add" js >/dev/null
     php "$COM/traducoes/mesclar.php" "$MB/resources/locale/php/pt_BR/zii.php" "$COM/traducoes/zii.php.add" php >/dev/null
@@ -121,6 +121,12 @@ if [ $JS_MUDOU -eq 1 ] || ! grep -q "custom/mb8-custom.js" "$MB/index.html"; the
 fi
 grep -q "custom/mb8-custom.js" "$MB/index.html" && diga "   index.html: script das telas novas incluido" \
     || echo "   AVISO: nao consegui incluir o script no index.html"
+[ -f "$EXT_MAGNUS" ] && cp -p "$EXT_MAGNUS" "$BKP/" 2>/dev/null
+if MSG=$(garantir_regras55); then
+    diga "   dialplan: regras do 55 presentes${MSG:+ ($MSG)}"
+else
+    echo "   AVISO: nao consegui conferir/colocar as regras do 55 em $EXT_MAGNUS (sem contexto [billing]?)"
+fi
 
 diga "== 6/7 Banco e crontab"
 # horario de Brasilia -> fuso do servidor

@@ -78,3 +78,44 @@ alertar() {  # alertar "assunto" arquivo_ou_texto
     fi
     registrar ALERTA "$assunto"
 }
+
+# ---- regras do 55 no dialplan (contexto [billing] do extensions_magnus.conf, arquivo oficial
+# que uma atualizacao do MagnusBilling pode sobrescrever). Fixo com DDD (10 digitos) ou com 0
+# na frente (11 digitos) ganha o 55 antes de ir para o billing.
+EXT_MAGNUS=/etc/asterisk/extensions_magnus.conf
+REGRAS_55='exten => _ZZXXXXXXXX,1,Goto(billing,55${EXTEN},1)
+exten => _0ZZXXXXXXXX,1,Goto(billing,55${EXTEN:1},1)'
+regras55_no_arquivo() {  # 0 = as duas regras estao no arquivo
+    [ -f "$EXT_MAGNUS" ] || return 1
+    local R
+    while IFS= read -r R; do
+        grep -qiF -- "$R" "$EXT_MAGNUS" || return 1
+    done <<< "$REGRAS_55"
+}
+regras55_carregadas() {  # 0 = o Asterisk carregou as duas (ou o Asterisk esta parado)
+    systemctl is-active -q asterisk 2>/dev/null || return 0
+    local D; D=$(asterisk -rx "dialplan show billing" 2>/dev/null)
+    echo "$D" | grep -q "'_ZZXXXXXXXX'" && echo "$D" | grep -q "'_0ZZXXXXXXXX'"
+}
+garantir_regras55() {  # coloca as regras no fim do contexto [billing] se faltarem; 0 = ok
+    [ -f "$EXT_MAGNUS" ] || return 1
+    grep -q '^\[billing\]' "$EXT_MAGNUS" || return 1
+    if ! regras55_no_arquivo; then
+        local TMP; TMP=$(mktemp)
+        # remove versoes parciais e insere as duas no fim do [billing] (antes do proximo contexto)
+        grep -viE '^exten => _0?ZZXXXXXXXX,' "$EXT_MAGNUS" | awk -v regras="$REGRAS_55" '
+            BEGIN { dentro = 0; feito = 0 }
+            /^\[/ { if (dentro && !feito) { print "; comunic: 55 antes do fixo com DDD"; print regras; print ""; feito = 1 }
+                    dentro = ($0 ~ /^\[billing\]/) }
+            { print }
+            END { if (!feito) { print ""; print "; comunic: 55 antes do fixo com DDD"; print regras } }' > "$TMP" \
+            && cat "$TMP" > "$EXT_MAGNUS"
+        rm -f "$TMP"
+        regras55_no_arquivo || return 1
+        systemctl is-active -q asterisk 2>/dev/null && asterisk -rx "dialplan reload" >/dev/null 2>&1
+        echo "regras do 55 recolocadas em $EXT_MAGNUS"
+    elif ! regras55_carregadas; then
+        asterisk -rx "dialplan reload" >/dev/null 2>&1
+    fi
+    return 0
+}

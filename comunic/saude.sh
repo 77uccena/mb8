@@ -36,6 +36,14 @@ grep -q "custom/mb8-custom.js" "$MB/index.html" && ok "index.html carrega custom
 grep -q "'Recurring value'" "$MB/resources/locale/pt_BR.js" && grep -q "'Recurring value'" "$MB/resources/locale/php/pt_BR/zii.php" \
     && ok "traducoes presentes" || falha "traducoes ausentes"
 
+if ! regras55_no_arquivo; then
+    falha "regras do 55 ausentes no dialplan ($EXT_MAGNUS)"
+elif ! regras55_carregadas; then
+    falha "regras do 55 no arquivo, mas nao carregadas no Asterisk (dialplan reload)"
+else
+    ok "dialplan: regras do 55 (fixo com DDD)"
+fi
+
 # banco
 COLS=$(mariadb mbilling -N -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='mbilling' AND TABLE_NAME='pkg_user' AND COLUMN_NAME IN ('plan_type','recurring_value')" 2>/dev/null)
 [ "$COLS" = "2" ] && ok "colunas plan_type e recurring_value" || falha "colunas do plano ausentes em pkg_user"
