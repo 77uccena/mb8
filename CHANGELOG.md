@@ -6,6 +6,9 @@ migration instructions remain authoritative for deployment.
 
 ## Comunic 1.2 (2026-10-02)
 
+- `migrar-dados.sh`: da ao usuario do MagnusBilling (`mbillingUser`) permissao no banco
+  `mbilling_origem` antes do `UpdateMysql` (na Magalu dava "CDbConnection failed to open the DB connection").
+
 - Novo `comunic/migrar-dados.sh`: migração **seletiva** de um dump do MB7/MB8 (clientes, SIP, DIDs,
   financeiro, tarifas, provedores Voxbeam/Algar/Datora/TIP/NVoip/Directcall com seus troncos,
   grupos e tarifas). Converte o dump numa base separada (`mbilling_origem`), faz backup antes,

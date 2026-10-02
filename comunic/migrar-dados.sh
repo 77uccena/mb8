@@ -111,6 +111,16 @@ r "Versao do banco: origem $VO / este servidor $VD"
 echo "== 4/8 Estrutura da origem"
 if [ "$VO" != "$VD" ]; then
     echo "   migrando a origem para MB8 (UpdateMysql no banco $ORIG)"
+    # o painel conecta com o usuario proprio do MagnusBilling (ex.: mbillingUser), que so tem
+    # permissao no banco mbilling: da a ele a mesma permissao no banco da origem
+    while IFS=$'\t' read -r GU GH; do
+        [ -n "$GU" ] || continue
+        q "GRANT ALL PRIVILEGES ON \`$ORIG\`.* TO '$(esc "$GU")'@'$(esc "$GH")'" \
+            && echo "   permissao no $ORIG para $GU@$GH"
+    done < <({ q "SELECT DISTINCT User, Host FROM mysql.db WHERE Db='mbilling'"
+               DU=$(awk -F= '/^[[:space:]]*dbuser/{gsub(/[[:space:]]/,"",$2);print $2;exit}' /etc/asterisk/res_config_mysql.conf 2>/dev/null)
+               [ -n "$DU" ] && q "SELECT User, Host FROM mysql.user WHERE User='$(esc "$DU")'"; } | sort -u)
+    q "FLUSH PRIVILEGES"
     (cd "$MB" && ORIGEM_DB="$ORIG" php -r '
         $c = require "protected/config/cron.php";
         $c["components"]["db"]["connectionString"] = preg_replace("/dbname=[^;]*/", "dbname=" . getenv("ORIGEM_DB"), $c["components"]["db"]["connectionString"]);
