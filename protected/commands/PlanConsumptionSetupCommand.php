@@ -62,13 +62,19 @@ class PlanConsumptionSetupCommand extends CConsoleCommand
              WHERE NOT EXISTS (SELECT 1 FROM pkg_module WHERE module = 'planconsumption')",
             [':parent' => $parent]
         );
-        // permissao de leitura para o grupo Administrator (id 1)
-        $this->execute(
+        // permissao de leitura para TODOS os grupos de administrador (id_user_type = 1),
+        // nao so o grupo 1: na producao os logins ficam em grupos como Gestor e Suporte.
+        // Cliente e revenda nunca recebem (o controller tambem recusa quem nao e admin).
+        $n = $this->execute(
             "INSERT INTO pkg_group_module (id_group, id_module, action, show_menu, createShortCut, createQuickStart)
-             SELECT 1, m.id, 'r', 1, 0, 0 FROM pkg_module m
+             SELECT g.id, m.id, 'r', 1, 0, 0 FROM pkg_module m
+             JOIN pkg_group_user g ON g.id_user_type = 1
              WHERE m.module = 'planconsumption'
-               AND NOT EXISTS (SELECT 1 FROM pkg_group_module gm WHERE gm.id_group = 1 AND gm.id_module = m.id)"
+               AND NOT EXISTS (SELECT 1 FROM pkg_group_module gm WHERE gm.id_group = g.id AND gm.id_module = m.id)"
         );
+        if ($n > 0) {
+            $this->log('Menu Consumo por Plano liberado para ' . $n . ' grupo(s) de administrador.');
+        }
 
         // configuracoes (Configuracoes > Configuracao)
         $settings = [

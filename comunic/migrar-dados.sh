@@ -256,18 +256,8 @@ if [ $ZERAR -eq 1 ]; then
 fi
 
 echo "== 7/8 Configuracao PJSIP e servicos"
-php <<'PHP' || echo "   AVISO: nao consegui gerar os arquivos PJSIP"
-<?php
-chdir('/var/www/html/mbilling');
-require_once 'yii/framework/yii.php';
-Yii::createConsoleApplication('protected/config/cron.php');
-$trunks = Trunk::model()->findAll(['condition' => 'providertech = :t AND status = 1', 'params' => [':t' => 'pjsip']]);
-$a = AsteriskAccess::instance(); $f = '/etc/asterisk/pjsip_magnus.conf';
-if (count($trunks)) { $a->writeAsteriskFile($trunks, $f, 'trunkcode'); } else { file_put_contents($f, ''); }
-$a->generateSipPeers();
-printf("   %d tronco(s) pjsip ativo(s), %d conta(s) SIP.\n", count($trunks), Sip::model()->count());
-PHP
-chown root:asterisk /etc/asterisk/pjsip_magnus*.conf 2>/dev/null; chmod 0640 /etc/asterisk/pjsip_magnus*.conf 2>/dev/null
+PJSIPERR=0
+bash "$COM/gerar-pjsip.sh" --sem-reload | tee -a "$REL"; [ "${PIPESTATUS[0]}" = "0" ] || PJSIPERR=1
 religar
 
 echo "== 8/8 Relatorio"
@@ -296,6 +286,9 @@ for T in pkg_cdr pkg_cdr_failed pkg_callerid pkg_restrict_phone pkg_ivr pkg_queu
 done
 } | tee -a "$REL"
 bash "$COM/saude.sh" | sed 's/^/   /' | tee -a "$REL"
+if [ $PJSIPERR -eq 1 ]; then
+    echo "   FALHA a configuracao PJSIP NAO foi gerada (veja a etapa 7/8). Corrija e rode: bash $COM/gerar-pjsip.sh" | tee -a "$REL"
+fi
 qo "DROP TABLE IF EXISTS _mig_trunk, _mig_group"
 cat <<FIM | tee -a "$REL"
 

@@ -23,11 +23,12 @@
             return;
         }
         if (!baseReady()) {
-            if (++tries < 600) { // ate ~2 minutos (aguarda o login)
-                setTimeout(boot, 200);
-            } else if (window.console) {
-                console.error('[mb8-custom] Ext/App nao disponivel; customizacoes nao carregadas.');
+            // aguarda o login pelo tempo que for preciso (a tela de login pode ficar aberta
+            // por horas). Depois de 1 minuto passa a conferir a cada 1 s.
+            if (++tries === 300 && window.console) {
+                console.info('[mb8-custom] aguardando o login para carregar as customizacoes.');
             }
+            setTimeout(boot, tries < 300 ? 200 : 1000);
             return;
         }
         window.__mb8CustomInstalled = true;

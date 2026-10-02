@@ -6,6 +6,16 @@ migration instructions remain authoritative for deployment.
 
 ## Comunic 1.2 (2026-10-02)
 
+- `custom/mb8-custom.js`: espera o login sem limite de tempo. Antes desistia depois de 2 minutos na tela de login,
+  e as telas novas (campos do usuario e Consumo por Plano) nao apareciam ate recarregar a pagina.
+
+- `PlanConsumptionSetup`: o menu Relatorios > Consumo por Plano passa a ser liberado para todos os grupos de
+  administrador (Gestor, Suporte...), nao so o grupo 1 (na producao ninguem usa o grupo 1).
+
+- Novo `comunic/gerar-pjsip.sh`: renomeia troncos com nome repetido (MB7 aceitava, PJSIP nao: "SIP name ... is used by
+  trunks ..."), gera a configuracao PJSIP e recarrega o Asterisk. O `migrar-dados.sh` usa esse script e marca FALHA
+  no relatorio se a configuracao nao for gerada.
+
 - `migrar-dados.sh`: da ao usuario do MagnusBilling (`mbillingUser`) permissao no banco
   `mbilling_origem` antes do `UpdateMysql` (na Magalu dava "CDbConnection failed to open the DB connection").
 
