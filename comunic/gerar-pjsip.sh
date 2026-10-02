@@ -44,7 +44,9 @@ PHP
 )
 RC=$?
 echo "$SAIDA" | grep -v '^PJSIP-OK$'
-chown root:asterisk /etc/asterisk/pjsip_magnus*.conf 2>/dev/null; chmod 0640 /etc/asterisk/pjsip_magnus*.conf 2>/dev/null
+# o painel (Apache) precisa continuar podendo gravar estes arquivos: dono = usuario do Apache
+APU=$(. /etc/apache2/envvars 2>/dev/null; echo "${APACHE_RUN_USER:-}"); id "$APU" >/dev/null 2>&1 || APU=asterisk
+chown "$APU":asterisk /etc/asterisk/pjsip_magnus*.conf 2>/dev/null; chmod 0660 /etc/asterisk/pjsip_magnus*.conf 2>/dev/null
 if [ $RC -ne 0 ] || ! echo "$SAIDA" | grep -q '^PJSIP-OK$'; then
     echo
     echo "   ERRO: o MagnusBilling NAO gerou a configuracao PJSIP (veja a mensagem acima)."

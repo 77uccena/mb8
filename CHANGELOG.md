@@ -6,6 +6,9 @@ migration instructions remain authoritative for deployment.
 
 ## Comunic 1.2 (2026-10-02)
 
+- `gerar-pjsip.sh` / `importar-banco.sh`: os arquivos `pjsip_magnus*.conf` ficam com o usuario do Apache como dono
+  (antes ficavam root:asterisk 0640 e o painel dava "Nao foi possivel gravar o arquivo de configuracao do Asterisk").
+
 - `custom/mb8-custom.js`: espera o login sem limite de tempo. Antes desistia depois de 2 minutos na tela de login,
   e as telas novas (campos do usuario e Consumo por Plano) nao apareciam ate recarregar a pagina.
 

@@ -135,8 +135,9 @@ if (count($trunks)) { $asterisk->writeAsteriskFile($trunks, $file, 'trunkcode');
 $asterisk->generateSipPeers();
 printf("   %d tronco(s) pjsip ativo(s), %d conta(s) SIP.\n", count($trunks), Sip::model()->count());
 PHP
-chown root:asterisk /etc/asterisk/pjsip_magnus*.conf 2>/dev/null
-chmod 0640 /etc/asterisk/pjsip_magnus*.conf 2>/dev/null
+# o painel (Apache) precisa continuar podendo gravar estes arquivos: dono = usuario do Apache
+APU=$(. /etc/apache2/envvars 2>/dev/null; echo "${APACHE_RUN_USER:-}"); id "$APU" >/dev/null 2>&1 || APU=asterisk
+chown "$APU":asterisk /etc/asterisk/pjsip_magnus*.conf 2>/dev/null; chmod 0660 /etc/asterisk/pjsip_magnus*.conf 2>/dev/null
 SEMPJSIP=$(mariadb mbilling -N -e "SELECT COUNT(*) FROM pkg_trunk WHERE status=1 AND providertech<>'pjsip'")
 [ "${SEMPJSIP:-0}" -gt 0 ] && echo "   AVISO: $SEMPJSIP tronco(s) ativo(s) com tecnologia diferente de pjsip (revise em Rotas > Troncos)."
 
