@@ -27,7 +27,7 @@
  *
  * Configuracoes (Configuracoes > Configuracao):
  *   finance_email            e-mail(s) do financeiro (separe varios com ;); vazio = "Admin Email"
- *   recurring_credit_groups  IDs dos grupos que recebem a recarga (padrao 3 = Cliente)
+ *   recurring_credit_groups  IDs dos grupos que recebem a recarga (padrao 3 = Clientes Comunic.se)
  *   recurring_credit_day     dia do mes da rotina (1 a 28, padrao 20)
  *
  * Cron (diario; so age a partir do dia configurado e uma vez por mes por usuario):

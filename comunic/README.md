@@ -76,6 +76,11 @@ customizações e **não** reinicia sozinho. No fim o painel abre com `root` / `
 
 ## 2. Importar o banco da produção (MB7 ou MB8)
 
+> **Comunic / Magalu:** use a **migração seletiva** (`comunic/migrar-dados.sh`), que traz só
+> clientes, contas SIP, DIDs, financeiro, tarifas e as rotas dos provedores Voxbeam, Algar,
+> Datora, TIP, NVoip e Directcall. Passo a passo: `comunic/docs/ROTEIRO-MAGALU.md`.
+> O `importar-banco.sh` abaixo traz o banco **inteiro**.
+
 No servidor **antigo**, com os serviços parados (congela os dados):
 
 ```bash

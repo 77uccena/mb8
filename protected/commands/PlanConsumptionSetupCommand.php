@@ -75,7 +75,7 @@ class PlanConsumptionSetupCommand extends CConsoleCommand
             ['E-mail do financeiro', 'finance_email', '',
                 'E-mail(s) que recebem os relatorios mensais da recarga recorrente (separe varios com ;). Vazio = Admin Email.'],
             ['Grupos da recarga recorrente', 'recurring_credit_groups', '3',
-                'IDs dos grupos de usuarios que recebem a recarga do valor recorrente, separados por virgula. 3 = Cliente.'],
+                'IDs dos grupos de usuarios que recebem a recarga do valor recorrente, separados por virgula. 3 = Clientes Comunic.se (o grupo 6, Clientes Revenda, nao entra).'],
             ['Dia da recarga recorrente', 'recurring_credit_day', '20',
                 'Dia do mes (1 a 28) da rotina da recarga recorrente: backup as 00:00 e recarga as 00:30.'],
             ['E-mail de alertas tecnicos', 'comunic_alert_email', '',

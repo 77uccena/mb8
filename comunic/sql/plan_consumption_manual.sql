@@ -27,7 +27,7 @@ INSERT INTO pkg_configuration (config_title, config_key, config_value, config_de
 SELECT 'E-mail do financeiro', 'finance_email', '', 'E-mail(s) que recebem os relatorios mensais da recarga recorrente (separe varios com ;). Vazio = Admin Email.', 'global', 1
 WHERE NOT EXISTS (SELECT 1 FROM pkg_configuration WHERE config_key = 'finance_email');
 INSERT INTO pkg_configuration (config_title, config_key, config_value, config_description, config_group_title, status)
-SELECT 'Grupos da recarga recorrente', 'recurring_credit_groups', '3', 'IDs dos grupos de usuarios que recebem a recarga do valor recorrente, separados por virgula. 3 = Cliente.', 'global', 1
+SELECT 'Grupos da recarga recorrente', 'recurring_credit_groups', '3', 'IDs dos grupos de usuarios que recebem a recarga do valor recorrente, separados por virgula. 3 = Clientes Comunic.se (o grupo 6, Clientes Revenda, nao entra).', 'global', 1
 WHERE NOT EXISTS (SELECT 1 FROM pkg_configuration WHERE config_key = 'recurring_credit_groups');
 INSERT INTO pkg_configuration (config_title, config_key, config_value, config_description, config_group_title, status)
 SELECT 'Dia da recarga recorrente', 'recurring_credit_day', '20', 'Dia do mes (1 a 28) da rotina da recarga recorrente: backup as 00:00 e recarga as 00:30.', 'global', 1

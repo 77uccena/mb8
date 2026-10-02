@@ -4,6 +4,16 @@ This file records notable user-visible changes to the MagnusBilling 8 release
 line. The project is under active development; release tags and database
 migration instructions remain authoritative for deployment.
 
+## Comunic 1.2 (2026-10-02)
+
+- Novo `comunic/migrar-dados.sh`: migração **seletiva** de um dump do MB7/MB8 (clientes, SIP, DIDs,
+  financeiro, tarifas, provedores Voxbeam/Algar/Datora/TIP/NVoip/Directcall com seus troncos,
+  grupos e tarifas). Converte o dump numa base separada (`mbilling_origem`), faz backup antes,
+  mantém os planos já preenchidos no MB8 e gera relatório (planos sem rota, SIP sem grupo, não migrado).
+  Opções: `--somente-ativos`, `--zerar-saldo`, `--zerar-grupos`, `--sem-registro`, `--manter-troncos`,
+  `--com-cdr`, `--sem-configuracoes`, `--provedores`, `--teste`.
+- `docs/ROTEIRO-MAGALU.md` reescrito para o plano outubro (só comunic ativo) / 20 de novembro (virada).
+
 ## Comunic 1.1.2 (2026-10-01)
 
 - `atualizar-mb8.sh --verificar`: ignora `script/`, `doc/`, `assets/` e `tmp/` do pacote (o instalador

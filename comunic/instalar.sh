@@ -94,7 +94,8 @@ MagnusBilling 8 + customizacoes Comunic instalados. Banco ainda VAZIO (usuario r
 
  1. Reinicie o servidor:            reboot
  2. Copie o dump da producao (MB7 ou MB8) para /root e importe:
-      bash $COM/importar-banco.sh /root/mbilling-producao.sql.gz
+      bash $COM/migrar-dados.sh /root/mb7.sql.gz ...   (Comunic: veja docs/ROTEIRO-MAGALU.md)
+    ou o banco inteiro: bash $COM/importar-banco.sh /root/mbilling-producao.sql.gz
  3. Configuracoes > Configuracao: E-mail do financeiro, Grupos e Dia da recarga.
     Configuracoes > SMTP. Depois:   bash $COM/conferir-producao.sh
 
